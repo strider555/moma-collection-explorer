@@ -320,8 +320,7 @@ async function showSidePanel(tagId) {
 
   // Set View Full Details link
   const viewBtn = document.getElementById('viewFullBtn');
-  const searchQ = encodeURIComponent(tag.name);
-  viewBtn.href = `https://www.moma.org/collection/?q=${searchQ}`;
+  viewBtn.href = `./viewByCategory.html?category=${encodeURIComponent(tag.name)}&type=${encodeURIComponent(tag.type)}`;
 
   const grid = document.getElementById('objectGrid');
   grid.innerHTML = '';
