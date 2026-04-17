@@ -154,6 +154,7 @@ let artistData = null;
 let simulation = null;
 let svgEl, gEl, zoomBehavior;
 let selectedTag = null;
+let selectedTags = new Set();
 
 const tagColors = {
   Department: '#E6A817',
@@ -280,29 +281,48 @@ function initGraph() {
 }
 
 function selectTag(tagId) {
-  selectedTag = tagId;
-  // Highlight
+  // Toggle multi-select
+  if (selectedTags.has(tagId)) {
+    selectedTags.delete(tagId);
+  } else {
+    selectedTags.add(tagId);
+  }
+  selectedTag = selectedTags.size ? tagId : null;
+
+  // Update legend highlights
+  document.querySelectorAll('.legend-sub-item').forEach(el => {
+    el.classList.toggle('selected', selectedTags.has(el.dataset.tagId));
+  });
+
+  if (selectedTags.size === 0) {
+    gEl.selectAll('circle').attr('stroke','rgba(255,255,255,0.2)').attr('stroke-width',1).attr('fill-opacity',0.85);
+    closeSidePanel();
+    return;
+  }
+
+  // Highlight selected nodes
   gEl.selectAll('circle')
-    .attr('stroke', d => d.id===tagId ? '#fff' : 'rgba(255,255,255,0.2)')
-    .attr('stroke-width', d => d.id===tagId ? 3 : 1)
-    .attr('fill-opacity', d => d.id===tagId ? 1 : 0.3);
-  // Zoom
+    .attr('stroke', d => selectedTags.has(d.id) ? '#fff' : 'rgba(255,255,255,0.2)')
+    .attr('stroke-width', d => selectedTags.has(d.id) ? 3 : 1)
+    .attr('fill-opacity', d => selectedTags.has(d.id) ? 1 : 0.3);
+
+  // Zoom to last toggled
   const nd = gEl.selectAll('circle').filter(d => d.id===tagId).datum();
   if (nd) {
     const w = +svgEl.attr('width'), h = +svgEl.attr('height'), s = 1.5;
     svgEl.transition().duration(500).call(zoomBehavior.transform,
       d3.zoomIdentity.translate(w/2 - nd.x*s, h/2 - nd.y*s).scale(s));
   }
-  showSidePanel(tagId);
+  showSidePanel();
 }
 
-async function showSidePanel(tagId) {
-  const tag = graphData.tags.find(t => t.id === tagId);
-  if (!tag) return;
+async function showSidePanel() {
+  const tags = [...selectedTags].map(id => graphData.tags.find(t => t.id === id)).filter(Boolean);
+  if (!tags.length) { closeSidePanel(); return; }
   const panel = document.getElementById('sidePanel');
-  document.getElementById('panelTitle').textContent = tag.name;
-  document.getElementById('panelTypeLabel').textContent = tag.type;
-  document.getElementById('panelColorIndicator').style.background = tagColors[tag.type]||'#888';
+  document.getElementById('panelTitle').textContent = tags.map(t => t.name).join(' + ');
+  document.getElementById('panelTypeLabel').textContent = tags.map(t => t.type).filter((v,i,a) => a.indexOf(v)===i).join(', ');
+  document.getElementById('panelColorIndicator').style.background = tagColors[tags[0].type]||'#888';
 
   if (!pulseData) {
     document.getElementById('panelSummary').textContent = 'Loading artworks...';
@@ -314,13 +334,20 @@ async function showSidePanel(tagId) {
   }
 
   const fieldMap = {Department:'department', Classification:'classification', Nationality:'nationality', Decade:'decade'};
-  const field = fieldMap[tag.type];
-  const objs = pulseData.filter(o => o[field] === tag.name);
-  document.getElementById('panelSummary').textContent = `${tag.name} · ${tag.type} · ${objs.length.toLocaleString()} artworks`;
+  // AND filter across all selected tags
+  const objs = pulseData.filter(o => tags.every(tag => {
+    const field = fieldMap[tag.type];
+    return field && o[field] === tag.name;
+  }));
+  document.getElementById('panelSummary').textContent = `${tags.map(t=>t.name).join(' + ')} · ${objs.length.toLocaleString()} artworks`;
 
   // Set View Full Details link
   const viewBtn = document.getElementById('viewFullBtn');
-  viewBtn.href = `./viewByCategory.html?category=${encodeURIComponent(tag.name)}&type=${encodeURIComponent(tag.type)}`;
+  if (tags.length === 1) {
+    viewBtn.href = `./viewByCategory.html?category=${encodeURIComponent(tags[0].name)}&type=${encodeURIComponent(tags[0].type)}`;
+  } else {
+    viewBtn.href = `./viewByCategory.html?` + tags.map(t => `tag=${encodeURIComponent(t.name)}`).join('&');
+  }
 
   const grid = document.getElementById('objectGrid');
   grid.innerHTML = '';
@@ -366,6 +393,8 @@ async function showSidePanel(tagId) {
 function closeSidePanel() {
   document.getElementById('sidePanel').classList.remove('open');
   selectedTag = null;
+  selectedTags.clear();
+  document.querySelectorAll('.legend-sub-item').forEach(el => el.classList.remove('selected'));
   gEl.selectAll('circle').attr('stroke','rgba(255,255,255,0.2)').attr('stroke-width',1).attr('fill-opacity',0.85);
 }
 
@@ -377,6 +406,7 @@ function setupLegend() {
     tags.forEach(tag => {
       const item = document.createElement('div');
       item.className = 'legend-sub-item';
+      item.dataset.tagId = tag.id;
       item.innerHTML = `<span>${tag.name}</span><span class="legend-count">${tag.count.toLocaleString()}</span>`;
       item.addEventListener('click', e => { e.stopPropagation(); selectTag(tag.id); });
       submenu.appendChild(item);
