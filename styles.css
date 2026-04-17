@@ -33,7 +33,7 @@ html, body {
 .app-header {
   position: relative;
   z-index: 100;
-  padding: 16px 24px;
+  padding: 8px 24px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   box-shadow: 0 1px 8px rgba(230, 168, 23, 0.15);
@@ -41,11 +41,11 @@ html, body {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 8px;
 }
 
 .app-header h1 {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   margin: 0;
   color: var(--gold);
@@ -86,12 +86,12 @@ html, body {
 
 .search-input {
   width: 100%;
-  padding: 10px 16px;
+  padding: 7px 12px;
   background: var(--bg-dark);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
   transition: all 0.2s;
 }
@@ -193,19 +193,23 @@ html, body {
 
 .filter-buttons {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.filter-buttons::-webkit-scrollbar { display: none; }
 
 .filter-btn {
-  padding: 8px 14px;
+  padding: 5px 12px;
   background: var(--bg-dark);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.3s ease-out;
+  white-space: nowrap;
   white-space: nowrap;
 }
 
