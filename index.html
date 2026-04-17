@@ -291,7 +291,10 @@ function selectTag(tagId) {
 
   // Update legend highlights
   document.querySelectorAll('.legend-sub-item').forEach(el => {
-    el.classList.toggle('selected', selectedTags.has(el.dataset.tagId));
+    const isSel = selectedTags.has(el.dataset.tagId);
+    el.classList.toggle('selected', isSel);
+    const cb = el.querySelector('.sub-checkbox');
+    if (cb) cb.textContent = isSel ? '☑' : '☐';
   });
 
   if (selectedTags.size === 0) {
@@ -394,7 +397,11 @@ function closeSidePanel() {
   document.getElementById('sidePanel').classList.remove('open');
   selectedTag = null;
   selectedTags.clear();
-  document.querySelectorAll('.legend-sub-item').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.legend-sub-item').forEach(el => {
+    el.classList.remove('selected');
+    const cb = el.querySelector('.sub-checkbox');
+    if (cb) cb.textContent = '☐';
+  });
   gEl.selectAll('circle').attr('stroke','rgba(255,255,255,0.2)').attr('stroke-width',1).attr('fill-opacity',0.85);
 }
 
@@ -407,7 +414,7 @@ function setupLegend() {
       const item = document.createElement('div');
       item.className = 'legend-sub-item';
       item.dataset.tagId = tag.id;
-      item.innerHTML = `<span>${tag.name}</span><span class="legend-count">${tag.count.toLocaleString()}</span>`;
+      item.innerHTML = `<span class="sub-checkbox">☐</span><span>${tag.name}</span><span class="legend-count">${tag.count.toLocaleString()}</span>`;
       item.addEventListener('click', e => { e.stopPropagation(); selectTag(tag.id); });
       submenu.appendChild(item);
     });
