@@ -470,6 +470,7 @@ html, body {
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+  padding-top: 50px;
 }
 
 .side-panel.open {
@@ -612,6 +613,10 @@ html, body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+  padding: 12px 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .object-card {
