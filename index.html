@@ -73,9 +73,9 @@
         <input type="text" class="search-input" id="searchInput" placeholder="Search tags..." autocomplete="off">
         <div class="search-dropdown" id="searchDropdown"></div>
       </div>
-      <div class="filter-buttons" id="filterButtons">
-        <button class="filter-btn active" data-type="all">All</button>
-      </div>
+      <select class="filter-select" id="filterSelect">
+        <option value="all">All Departments</option>
+      </select>
       
     </div>
   </header>
@@ -169,21 +169,24 @@ async function loadData() {
   graphData = await resp.json();
   console.log(`Loaded ${graphData.tags.length} tags, ${graphData.links.length} links, ${graphData.objectCount} objects`);
 
-  // Build department filter buttons
+  // Build department filter dropdown
   const depts = graphData.tags.filter(t => t.type === 'Department').sort((a,b) => b.count - a.count);
-  const btnContainer = document.getElementById('filterButtons');
+  const filterSelect = document.getElementById('filterSelect');
   depts.forEach(d => {
-    const btn = document.createElement('button');
-    btn.className = 'filter-btn';
-    btn.dataset.type = d.id;
-    const short = d.name.replace('Architecture & Design','Architecture').replace('Media and Performance','Media & Perf.');
-    btn.textContent = short;
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectTag(d.id);
-    });
-    btnContainer.appendChild(btn);
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = d.name;
+    filterSelect.appendChild(opt);
+  });
+  filterSelect.addEventListener('change', () => {
+    const val = filterSelect.value;
+    if (val === 'all') {
+      // Reset to all
+      d3.selectAll('.node').attr('opacity', 1);
+      d3.selectAll('.link').attr('opacity', 0.3);
+    } else {
+      selectTag(val);
+    }
   });
 
   try {
