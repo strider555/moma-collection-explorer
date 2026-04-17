@@ -70,7 +70,7 @@
     </div>
     <div class="controls">
       <div class="search-container">
-        <input type="text" class="search-input" id="searchInput" placeholder="Search tags..." autocomplete="off">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search tags or artworks..." autocomplete="off">
         <div class="search-dropdown" id="searchDropdown"></div>
       </div>
       <select class="filter-select" id="filterSelect">
@@ -396,20 +396,60 @@ function setupLegend() {
 function setupSearch() {
   const input = document.getElementById('searchInput');
   const dropdown = document.getElementById('searchDropdown');
+  let debounce = null;
   input.addEventListener('input', () => {
-    const q = input.value.toLowerCase().trim();
-    if (q.length < 2) { dropdown.classList.remove('open'); return; }
-    const results = graphData.tags.filter(t => t.name.toLowerCase().includes(q)).sort((a,b) => b.count-a.count).slice(0,15);
-    if (!results.length) { dropdown.classList.remove('open'); return; }
-    dropdown.innerHTML = results.map(t =>
-      `<div class="search-item" data-id="${t.id}"><span class="search-dot" style="background:${tagColors[t.type]}"></span><span>${t.name}</span><span class="search-count">${t.count.toLocaleString()}</span></div>`
-    ).join('');
-    dropdown.querySelectorAll('.search-item').forEach(item => {
-      item.addEventListener('click', () => { selectTag(item.dataset.id); input.value=''; dropdown.classList.remove('open'); });
-    });
-    dropdown.classList.add('open');
+    clearTimeout(debounce);
+    debounce = setTimeout(() => doSearch(input, dropdown), 200);
   });
   document.addEventListener('click', e => { if (!e.target.closest('.search-container')) dropdown.classList.remove('open'); });
+}
+
+function doSearch(input, dropdown) {
+  const q = input.value.toLowerCase().trim();
+  if (q.length < 2) { dropdown.classList.remove('open'); return; }
+
+  // Search tags
+  const tagResults = graphData.tags.filter(t => t.name.toLowerCase().includes(q)).sort((a,b) => b.count-a.count).slice(0,8);
+
+  // Search artworks (title + artist) from pulse data
+  let artworkResults = [];
+  if (pulseData) {
+    artworkResults = pulseData.filter(o =>
+      (o.title && o.title.toLowerCase().includes(q)) ||
+      (o.artistName && o.artistName.toLowerCase().includes(q))
+    ).slice(0, 8);
+  }
+
+  if (!tagResults.length && !artworkResults.length) { dropdown.classList.remove('open'); return; }
+
+  let html = '';
+  if (tagResults.length) {
+    html += '<div style="padding:4px 12px;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Tags</div>';
+    html += tagResults.map(t =>
+      `<div class="search-item" data-id="${t.id}"><span class="search-dot" style="background:${tagColors[t.type]}"></span><span>${t.name}</span><span class="search-count">${t.count.toLocaleString()}</span></div>`
+    ).join('');
+  }
+  if (artworkResults.length) {
+    html += '<div style="padding:4px 12px;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-top:1px solid var(--border-color);margin-top:4px;padding-top:8px">Artworks</div>';
+    html += artworkResults.map(o =>
+      `<div class="search-item search-artwork" data-moma-id="${o.id||''}">`+
+      `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.title||'Untitled'}</span>`+
+      `<span class="search-count" style="flex-shrink:0">${o.artistName||''}</span></div>`
+    ).join('');
+  }
+
+  dropdown.innerHTML = html;
+  dropdown.querySelectorAll('.search-item:not(.search-artwork)').forEach(item => {
+    item.addEventListener('click', () => { selectTag(item.dataset.id); input.value=''; dropdown.classList.remove('open'); });
+  });
+  dropdown.querySelectorAll('.search-artwork').forEach(item => {
+    item.addEventListener('click', () => {
+      const momaId = item.dataset.momaId;
+      if (momaId) window.open(`https://www.moma.org/collection/works/${momaId}`, '_blank');
+      input.value = ''; dropdown.classList.remove('open');
+    });
+  });
+  dropdown.classList.add('open');
 }
 
 function setupZoom() {
